@@ -1,18 +1,12 @@
 import { createInterface } from "readline";
 import { SIGNUP_URLS } from "@/constants/api";
-import { loadConfigFile, writeConfigFile, getMissingKeys } from "@/lib/env-loader";
+import { loadConfigFile, writeConfigFile } from "@/lib/env-loader";
 
 const BOLD = "\x1b[1m";
 const CYAN = "\x1b[36m";
 const GREEN = "\x1b[32m";
 const YELLOW = "\x1b[33m";
 const RESET = "\x1b[0m";
-
-function resetStdin(): void {
-  if (process.stdin.isRaw) {
-    process.stdin.setRawMode(false);
-  }
-}
 
 function askQuestion(query: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -40,21 +34,36 @@ async function promptForKey(key: string): Promise<string | null> {
 export async function runSetupIfNeeded(): Promise<boolean> {
   await loadConfigFile();
 
-  const missing = getMissingKeys();
-  if (missing.length === 0) return true;
+  const newsMissing = !process.env.NEWS_API_KEY;
+  const needsAi = !process.env.GEMINI_API_KEY && !process.env.GROQ_API_KEY;
 
-  resetStdin();
+  if (!newsMissing && !needsAi) return true;
 
-  console.log(`\n${BOLD}${YELLOW}🔑 tui-ai-hub needs API keys${RESET}`);
-  console.log("  Create a free account at each service and paste your keys below.\n");
+  console.log(`\n${BOLD}${YELLOW}🔑 tui-ai-hub needs API keys${RESET}\n`);
 
   const collected: Record<string, string> = {};
 
-  for (const key of missing) {
-    const value = await promptForKey(key);
-    if (value) {
-      collected[key] = value;
+  if (needsAi) {
+    console.log("Choose an AI provider:");
+    console.log("  1) Google Gemini (default)");
+    console.log("  2) Groq");
+    const choice = await askQuestion("Enter choice [1]: ");
+
+    if (choice === "2") {
+      const key = await promptForKey("GROQ_API_KEY");
+      if (key) {
+        collected.GROQ_API_KEY = key;
+        if (!process.env.AI_PROVIDER) collected.AI_PROVIDER = "groq";
+      }
+    } else {
+      const key = await promptForKey("GEMINI_API_KEY");
+      if (key) collected.GEMINI_API_KEY = key;
     }
+  }
+
+  if (newsMissing) {
+    const key = await promptForKey("NEWS_API_KEY");
+    if (key) collected.NEWS_API_KEY = key;
   }
 
   if (Object.keys(collected).length === 0) {
@@ -70,10 +79,8 @@ export async function runSetupIfNeeded(): Promise<boolean> {
     }
   }
 
-  const stillMissing = getMissingKeys();
-  if (stillMissing.length > 0) {
-    console.log(`\n${YELLOW}Some keys are still missing: ${stillMissing.join(", ")}${RESET}`);
-    console.log("You can re-run the app or edit ~/.config/tui-ai-hub/.env manually.");
+  if (!process.env.NEWS_API_KEY) {
+    console.log(`\n${YELLOW}NEWS_API_KEY is required. Edit ~/.config/tui-ai-hub/.env and re-run.${RESET}`);
     return false;
   }
 

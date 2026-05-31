@@ -5,7 +5,7 @@ import { existsSync, mkdirSync } from "fs";
 export const CONFIG_DIR = join(homedir(), ".config", "tui-ai-hub");
 export const CONFIG_PATH = join(CONFIG_DIR, ".env");
 
-const REQUIRED_KEYS = ["GEMINI_API_KEY", "NEWS_API_KEY"] as const;
+const REQUIRED_KEYS = ["NEWS_API_KEY"] as const;
 
 export function getMissingKeys(): string[] {
   return REQUIRED_KEYS.filter((key) => !process.env[key]);

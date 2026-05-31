@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## Rules
+
+- **Never commit, push, or publish without asking the user first.**
+
 ## Project
 
 Terminal UI app (`tui-ai-hub/`) with 3 AI-powered tools: Web Scraper, Chat, News. Built with OpenTUI + React, Gemini via Vercel AI SDK. Published to npm as `tui-ai-hub`.
