@@ -19,3 +19,21 @@ export const NEWSAPI_BASE_URL = "https://newsapi.org/v2";
 export const NEWSAPI_DEFAULT_LANGUAGE = "en";
 export const NEWSAPI_PAGE_SIZE = 10;
 export const NEWSAPI_RATE_LIMIT_STATUS = "426";
+
+export const SIGNUP_URLS: Record<string, { name: string; url: string; hint: string }> = {
+  GEMINI_API_KEY: {
+    name: "Google Gemini",
+    url: "https://aistudio.google.com/apikey",
+    hint: "Required for AI features (scraper, chat, news summaries)",
+  },
+  GROQ_API_KEY: {
+    name: "Groq",
+    url: "https://console.groq.com/keys",
+    hint: "Alternative LLM provider (set AI_PROVIDER=groq to use)",
+  },
+  NEWS_API_KEY: {
+    name: "NewsAPI",
+    url: "https://newsapi.org/register",
+    hint: "Required for the News tool",
+  },
+};
