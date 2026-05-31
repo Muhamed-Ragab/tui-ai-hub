@@ -1,0 +1,16 @@
+export const KEYS = {
+  QUIT: "q",
+  CTRL_C: "c",
+  TOGGLE_FOCUS: "tab",
+  NAV_UP: "up",
+  NAV_DOWN: "down",
+  SELECT: "return",
+  ESCAPE: "escape",
+  SCREEN_1: "1",
+  SCREEN_2: "2",
+  SCREEN_3: "3",
+  SESSION_LIST: "s",
+  NEW_SESSION: "n",
+  DELETE_SESSION: "d",
+  RENAME_SESSION: "r",
+} as const;

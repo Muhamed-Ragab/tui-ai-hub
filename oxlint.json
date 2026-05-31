@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "env": {
+    "node": true
+  },
+  "globals": {
+    "Bun": "readonly"
+  },
+  "settings": {
+    "react": {
+      "version": "19.0"
+    }
+  },
+  "ignorePatterns": ["node_modules", "dist", "data"],
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-debugger": "error"
+  }
+}

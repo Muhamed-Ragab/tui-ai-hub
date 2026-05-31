@@ -1,0 +1,55 @@
+{
+  "name": "tui-ai-hub",
+  "version": "0.1.0",
+  "description": "Terminal AI Hub — Web Scraper, Chat & News tools powered by Gemini",
+  "module": "index.tsx",
+  "main": "dist/index.js",
+  "bin": {
+    "tui-ai-hub": "dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "scripts": {
+    "start": "bun run index.tsx",
+    "dev": "bun --watch run index.tsx",
+    "build": "bun build index.tsx --outdir dist --target bun --entry-naming '[name].js'",
+    "prepublishOnly": "bun run build && bun run lint",
+    "lint": "oxlint src/ index.tsx",
+    "lint:fix": "oxlint --fix src/ index.tsx",
+    "fmt": "oxfmt src/ index.tsx",
+    "fmt:check": "oxfmt --check src/ index.tsx"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Muhamed-Ragab/tui-ai-hub.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Muhamed-Ragab/tui-ai-hub/issues"
+  },
+  "homepage": "https://github.com/Muhamed-Ragab/tui-ai-hub#readme",
+  "license": "MIT",
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.1.0",
+    "@opentui/react": "^0.1.0",
+    "react": "^19.0.0",
+    "ai": "^4.0.0",
+    "@ai-sdk/google": "^1.0.0",
+    "@ai-sdk/openai": "^1.0.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "oxfmt": "^0.52.0",
+    "oxlint": "^1.67.0",
+    "typescript": "^6.0.3"
+  }
+}
