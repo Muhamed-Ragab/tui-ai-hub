@@ -5,10 +5,16 @@ export const AI_PROVIDERS = {
   google: {
     envKey: "GEMINI_API_KEY" as const,
     model: AI_MODEL,
+    name: "Google Gemini",
+    description: "Google's flagship multimodal model (Gemini 2.0 Flash)",
+    signupUrl: "https://aistudio.google.com/apikey",
   },
   groq: {
     envKey: "GROQ_API_KEY" as const,
     model: GROQ_MODEL,
+    name: "Groq (LLaMA)",
+    description: "Fast inference via Groq LPU hardware (LLaMA 3.3 70B)",
+    signupUrl: "https://console.groq.com/keys",
     baseUrl: "https://api.groq.com/openai/v1",
   },
 } as const;
@@ -27,9 +33,9 @@ export const SIGNUP_URLS: Record<string, { name: string; url: string; hint: stri
     hint: "Required for AI features (scraper, chat, news summaries)",
   },
   GROQ_API_KEY: {
-    name: "Groq",
+    name: "Groq (LLaMA)",
     url: "https://console.groq.com/keys",
-    hint: "Alternative LLM provider (set AI_PROVIDER=groq to use)",
+    hint: "Required when Groq is the active AI provider",
   },
   NEWS_API_KEY: {
     name: "NewsAPI",

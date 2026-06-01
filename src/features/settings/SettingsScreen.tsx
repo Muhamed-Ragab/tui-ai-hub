@@ -1,35 +1,41 @@
 import { Activity, useEffect, useRef, useState } from "react";
 import { useKeyboard } from "@opentui/react";
 import { KEYS } from "@/constants/keys";
+import { AI_PROVIDERS } from "@/constants/api";
 import { type FocusZone, CHARS } from "@/constants/ui";
 import { any, key, matchKey } from "@/lib/keyboard";
 import { colors } from "@/theme";
-import { settingsService, type SettingsKey } from "./settings-service";
+import { envConfig } from "@/lib/env-config";
+import { settingsService, type ProviderInfo } from "./settings-service";
 
-type Mode = "list" | "edit";
-
-function maskValue(value: string): string {
-  if (!value) return "";
-  if (value.length <= 8) return "****";
-  return `****…${value.slice(-4)}`;
-}
+type ItemType = "provider" | "ai-key" | "news-key";
+type EditMode = "ai-key" | "news-key";
 
 interface SettingsScreenProps {
   focusZone: FocusZone;
 }
 
 export function SettingsScreen({ focusZone }: SettingsScreenProps) {
-  const [keys, setKeys] = useState<SettingsKey[]>([]);
-  const [mode, setMode] = useState<Mode>("list");
+  const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [mode, setMode] = useState<EditMode | null>(null);
   const [editValue, setEditValue] = useState("");
-  const [editKey, setEditKey] = useState(0);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const statusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    setKeys(settingsService.getKeys());
-  }, []);
+  function loadData() {
+    setProviders(settingsService.getProviders());
+  }
+
+  useEffect(loadData, []);
+
+  const items: { type: ItemType; providerId?: string; label: string }[] = [
+    ...providers.map((p) => ({ type: "provider" as const, providerId: p.id, label: p.name })),
+    { type: "ai-key" as const, label: "API Key" },
+    { type: "news-key" as const, label: "NewsAPI Key" },
+  ];
+
+  const currentItem = items[selectedIndex];
 
   function showStatus(msg: string) {
     if (statusTimer.current) clearTimeout(statusTimer.current);
@@ -40,31 +46,43 @@ export function SettingsScreen({ focusZone }: SettingsScreenProps) {
     }, 2500);
   }
 
-  function handleEdit(key: SettingsKey | undefined) {
-    if (!key) return;
-    setEditValue(key.currentValue);
-    setEditKey((k) => k + 1);
-    setMode("edit");
+  async function handleSelect() {
+    if (!currentItem) return;
+    if (currentItem.type === "provider") {
+      await settingsService.setProvider(currentItem.providerId!);
+      loadData();
+      showStatus(`Switched to ${currentItem.label}`);
+    } else {
+      setEditValue(envConfig.get(currentItem.type === "ai-key" ? AI_PROVIDERS[settingsService.getCurrentProvider()].envKey : "NEWS_API_KEY"));
+      setMode(currentItem.type);
+    }
   }
 
-  function handleSave() {
-    const key = keys[selectedIndex];
-    if (!key) return;
-    settingsService.saveKeys({ [key.envKey]: editValue });
-    setKeys(settingsService.getKeys());
-    setMode("list");
-    showStatus(`Saved ${key.name} key`);
+  async function handleSave() {
+    if (!mode) return;
+    const key = mode === "ai-key" ? AI_PROVIDERS[settingsService.getCurrentProvider()].envKey : "NEWS_API_KEY";
+    await settingsService.saveKeys({ [key]: editValue });
+    if (mode === "ai-key") {
+      const provider = settingsService.getCurrentProvider();
+      const cfg = AI_PROVIDERS[provider];
+      if (key === cfg.envKey) {
+        await settingsService.setProvider(provider);
+      }
+    }
+    loadData();
+    setMode(null);
+    showStatus(`Saved ${mode === "ai-key" ? "API" : "NewsAPI"} key`);
   }
 
   function handleCancel() {
-    setMode("list");
+    setMode(null);
     setEditValue("");
   }
 
   useKeyboard((e) => {
     if (focusZone !== "content") return;
 
-    if (mode === "edit") {
+    if (mode) {
       matchKey(e, [key(KEYS.ESCAPE), handleCancel]);
       return;
     }
@@ -74,7 +92,7 @@ export function SettingsScreen({ focusZone }: SettingsScreenProps) {
       [
         any(key(KEYS.NAV_UP), key(KEYS.NAV_DOWN)),
         () => {
-          const lastIndex = keys.length - 1;
+          const lastIndex = items.length - 1;
           if (lastIndex < 0) return;
           setSelectedIndex((prev) => {
             if (e.name === KEYS.NAV_UP) return prev === 0 ? lastIndex : prev - 1;
@@ -82,9 +100,11 @@ export function SettingsScreen({ focusZone }: SettingsScreenProps) {
           });
         },
       ],
-      [key(KEYS.SELECT), () => handleEdit(keys[selectedIndex])],
+      [key(KEYS.SELECT), handleSelect],
     );
   });
+
+  const activeProvider = providers.find((p) => p.isActive);
 
   return (
     <box style={{ flexDirection: "column", width: "100%", height: "100%", gap: 1 }}>
@@ -95,60 +115,98 @@ export function SettingsScreen({ focusZone }: SettingsScreenProps) {
       </Activity>
 
       <box style={{ flexDirection: "column", gap: 0, marginTop: 1 }}>
-        <text fg={colors.muted}>API Keys</text>
+        <text fg={colors.muted}>AI Provider</text>
         <text fg={colors.muted}>{CHARS.SEPARATOR.repeat(40)}</text>
       </box>
 
       <box style={{ flexDirection: "column", gap: 0 }}>
-        {keys.map((key, i) => {
+        {providers.map((p, i) => {
           const isSelected = selectedIndex === i;
           const itemFg = isSelected ? colors.accent : colors.fg;
           const prefix = isSelected ? CHARS.SELECTED_PREFIX : CHARS.UNSELECTED_PREFIX;
-          const valueDisplay = key.isSet ? maskValue(key.currentValue) : "not set";
-          const valueFg = key.isSet ? colors.fg : colors.muted;
+          const indicator = p.isActive ? CHARS.ACTIVE_INDICATOR : CHARS.INACTIVE_INDICATOR;
+          const statusFg = p.isConfigured ? colors.green : colors.red;
+          const statusText = p.isConfigured ? "active" : "no key";
 
           return (
-            <box key={key.envKey} style={{ flexDirection: "column", height: 2 }}>
-              <text fg={itemFg}>{prefix}{key.name}</text>
-              <text fg={valueFg} style={{ paddingLeft: 2 }}>Key: {valueDisplay}</text>
+            <box key={p.id} style={{ flexDirection: "column", height: 2 }}>
+              <text fg={itemFg}>{prefix}{indicator} {p.name}</text>
+              <text fg={statusFg} style={{ paddingLeft: 2 }}>{statusText}</text>
             </box>
           );
         })}
       </box>
 
-      <box style={{ flexDirection: "column", gap: 1, marginTop: 1 }}>
-        <Activity mode={mode === "edit" ? "visible" : "hidden"}>
-          <text fg={colors.accent}>{keys[selectedIndex]?.name ?? ""}</text>
-          <text fg={colors.muted}>{keys[selectedIndex]?.hint ?? ""}</text>
-        </Activity>
+      <box style={{ flexDirection: "column", gap: 0, marginTop: 1 }}>
+        <text fg={colors.muted}>API Keys</text>
+        <text fg={colors.muted}>{CHARS.SEPARATOR.repeat(40)}</text>
+      </box>
 
-        <box style={{ flexDirection: "row", gap: 1 }}>
+      <Activity mode={mode !== "ai-key" ? "visible" : "hidden"}>
+        {["ai-key", "news-key"].map((t) => {
+          const itemType = t as ItemType;
+          const idx = providers.length + (itemType === "ai-key" ? 0 : 1);
+          const isSelected = selectedIndex === idx;
+          const itemFg = isSelected ? colors.accent : colors.fg;
+          const prefix = isSelected ? CHARS.SELECTED_PREFIX : CHARS.UNSELECTED_PREFIX;
+          const envKey = itemType === "ai-key" ? AI_PROVIDERS[settingsService.getCurrentProvider()].envKey : "NEWS_API_KEY";
+          const isSet = envConfig.has(envKey);
+          const name = itemType === "ai-key" ? `${activeProvider?.name ?? ""} API Key` : "NewsAPI Key";
+
+          return (
+            <box key={itemType} style={{ flexDirection: "column", height: 2 }}>
+              <text fg={itemFg}>{prefix}{name}</text>
+              <text fg={isSet ? colors.fg : colors.muted} style={{ paddingLeft: 2 }}>
+                {isSet ? "Configured" : "Not set"}
+              </text>
+            </box>
+          );
+        })}
+      </Activity>
+
+      <Activity mode={mode === "ai-key" ? "visible" : "hidden"}>
+        <text fg={colors.muted} style={{ marginTop: 1 }}>
+          {activeProvider?.name ?? ""} API Key
+        </text>
+        <text fg={colors.muted}>
+          {AI_PROVIDERS[settingsService.getCurrentProvider()]?.signupUrl ?? ""}
+        </text>
+        <box style={{ flexDirection: "row", gap: 1, marginTop: 1 }}>
           <box style={{ flexGrow: 1, border: true, borderStyle: "single" }}>
             <input
-              key={editKey}
               value={editValue}
               onInput={setEditValue}
               onSubmit={handleSave}
-              focused={mode === "edit"}
-              placeholder="Enter API key..."
+              focused
+              placeholder={`Enter ${activeProvider?.name ?? ""} API key...`}
             />
           </box>
         </box>
-
-        <Activity mode={mode === "edit" ? "visible" : "hidden"}>
-          <text fg={colors.muted}>Enter: save  |  Esc: cancel</text>
-        </Activity>
-      </box>
-
-      <Activity mode={mode === "list" ? "visible" : "hidden"}>
-        <text fg={colors.muted} style={{ marginTop: 1 }}>
-          Up/Down: navigate  |  Enter: edit  |  1-4: switch screens
-        </text>
+        <text fg={colors.muted}>Enter: save  |  Esc: cancel</text>
       </Activity>
 
-      <text fg={colors.muted} style={{ marginTop: 1 }}>
-        Changes take effect after restart.
-      </text>
+      <Activity mode={mode === "news-key" ? "visible" : "hidden"}>
+        <text fg={colors.muted} style={{ marginTop: 1 }}>NewsAPI Key</text>
+        <text fg={colors.muted}>https://newsapi.org/register</text>
+        <box style={{ flexDirection: "row", gap: 1, marginTop: 1 }}>
+          <box style={{ flexGrow: 1, border: true, borderStyle: "single" }}>
+            <input
+              value={editValue}
+              onInput={setEditValue}
+              onSubmit={handleSave}
+              focused
+              placeholder="Enter NewsAPI key..."
+            />
+          </box>
+        </box>
+        <text fg={colors.muted}>Enter: save  |  Esc: cancel</text>
+      </Activity>
+
+      <Activity mode={!mode ? "visible" : "hidden"}>
+        <text fg={colors.muted} style={{ marginTop: 1 }}>
+          Up/Down: navigate  |  Enter: switch provider / edit key
+        </text>
+      </Activity>
     </box>
   );
 }

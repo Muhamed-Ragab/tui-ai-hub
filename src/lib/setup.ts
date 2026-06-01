@@ -1,6 +1,6 @@
 import { createInterface } from "readline";
 import { SIGNUP_URLS } from "@/constants/api";
-import { loadConfigFile, writeConfigFile } from "@/lib/env-loader";
+import { envConfig } from "@/lib/env-config";
 
 const BOLD = "\x1b[1m";
 const CYAN = "\x1b[36m";
@@ -32,10 +32,10 @@ async function promptForKey(key: string): Promise<string | null> {
 }
 
 export async function runSetupIfNeeded(): Promise<boolean> {
-  await loadConfigFile();
+  await envConfig.load();
 
-  const newsMissing = !process.env.NEWS_API_KEY;
-  const needsAi = !process.env.GEMINI_API_KEY && !process.env.GROQ_API_KEY;
+  const newsMissing = !envConfig.has("NEWS_API_KEY");
+  const needsAi = !envConfig.has("GEMINI_API_KEY") && !envConfig.has("GROQ_API_KEY");
 
   if (!newsMissing && !needsAi) return true;
 
@@ -53,7 +53,7 @@ export async function runSetupIfNeeded(): Promise<boolean> {
       const key = await promptForKey("GROQ_API_KEY");
       if (key) {
         collected.GROQ_API_KEY = key;
-        if (!process.env.AI_PROVIDER) collected.AI_PROVIDER = "groq";
+        if (!envConfig.has("AI_PROVIDER")) collected.AI_PROVIDER = "groq";
       }
     } else {
       const key = await promptForKey("GEMINI_API_KEY");
@@ -71,15 +71,9 @@ export async function runSetupIfNeeded(): Promise<boolean> {
     return false;
   }
 
-  await writeConfigFile(collected);
+  await envConfig.setMultiple(collected);
 
-  for (const [key, value] of Object.entries(collected)) {
-    if (!process.env[key]) {
-      process.env[key] = value;
-    }
-  }
-
-  if (!process.env.NEWS_API_KEY) {
+  if (!envConfig.has("NEWS_API_KEY")) {
     console.log(`\n${YELLOW}NEWS_API_KEY is required. Edit ~/.config/tui-ai-hub/.env and re-run.${RESET}`);
     return false;
   }

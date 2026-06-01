@@ -2,10 +2,13 @@ import { useState, startTransition } from "react";
 import { useKeyboard, useRenderer } from "@opentui/react";
 import { colors } from "@/theme";
 import { Sidebar } from "@/components/Sidebar";
+import { ProviderSelector } from "@/components/ProviderSelector";
 import { WebScraperScreen } from "@/features/scraper/WebScraperScreen";
 import { ChatScreen } from "@/features/chat/ChatScreen";
 import { NewsScreen } from "@/features/news/NewsScreen";
 import { SettingsScreen } from "@/features/settings/SettingsScreen";
+import { settingsService } from "@/features/settings/settings-service";
+import { cache } from "@/lib/cache";
 import { KEYS } from "@/constants/keys";
 import { SCREEN_IDS, STATUSBAR_HEIGHT, CONTENT_PADDING, type ScreenId, type FocusZone } from "@/constants/ui";
 import { key, ctrlKey, any, matchKey } from "@/lib/keyboard";
@@ -26,11 +29,20 @@ export function App() {
   const [focusZone, setFocusZone] = useState<"sidebar" | "content">("content");
   const [focusIndex, setFocusIndex] = useState(0);
   const renderer = useRenderer();
+  const [needsSetup, setNeedsSetup] = useState(
+    () => !settingsService.isProviderConfigured(),
+  );
 
   useKeyboard((e) => {
     matchKey(
       e,
-      [any(key(KEYS.QUIT), ctrlKey(KEYS.CTRL_C)), () => renderer.destroy()],
+      [any(key(KEYS.QUIT), ctrlKey(KEYS.CTRL_C)), () => { cache.save(); renderer.destroy(); }],
+    );
+
+    if (needsSetup) return;
+
+    matchKey(
+      e,
       [
         key(KEYS.TOGGLE_FOCUS),
         () => setFocusZone((prev) => (prev === "sidebar" ? "content" : "sidebar")),
@@ -92,6 +104,22 @@ export function App() {
       );
     }
   });
+
+  if (needsSetup) {
+    return (
+      <box
+        style={{
+          width: "100%",
+          height: "100%",
+          backgroundColor: colors.bg,
+          padding: 2,
+          flexDirection: "column",
+        }}
+      >
+        <ProviderSelector onComplete={() => setNeedsSetup(false)} />
+      </box>
+    );
+  }
 
   return (
     <box

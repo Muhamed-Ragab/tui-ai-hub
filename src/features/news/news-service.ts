@@ -46,11 +46,18 @@ export class NewsService {
     article: NewsApiArticle,
     query: string,
   ): Promise<{ summary: string; relevance: string }> {
-    return this.ai.generateStructured(
+    const cacheKey = `summary:${article.url}:${query}`;
+    const cached = this.cache.get<{ summary: string; relevance: string }>(cacheKey);
+    if (cached) return cached;
+
+    const result = await this.ai.generateStructured(
       articleSummarySchema,
       SUMMARY_SYSTEM_PROMPT,
       `Search query: "${query}"\n\nTitle: ${article.title}\nDescription: ${article.description ?? "No description"}`,
     );
+
+    this.cache.set(cacheKey, result, NEWS_CACHE_TTL_MS);
+    return result;
   }
 }
 

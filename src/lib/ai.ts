@@ -5,9 +5,14 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { env } from "@/config";
 import { AppError } from "@/errors";
 import { AI_PROVIDERS, type AiProvider } from "@/constants/api";
+import { envConfig } from "@/lib/env-config";
 
 export class AiClient {
   constructor(private model: LanguageModel) {}
+
+  reconfigure(provider: AiProvider) {
+    this.model = createAiModel(provider);
+  }
 
   async generateReply(system: string, prompt: string): Promise<string> {
     try {
@@ -56,7 +61,7 @@ function createAiModel(provider: AiProvider): LanguageModel {
   switch (provider) {
     case "google": {
       const cfg = AI_PROVIDERS.google;
-      const apiKey = env[cfg.envKey];
+      const apiKey = envConfig.get(cfg.envKey);
       if (!apiKey)
         throw new AppError("GEMINI_API_KEY is required for google provider", "CONFIG_ERROR", false);
       const google = createGoogleGenerativeAI({ apiKey });
@@ -64,7 +69,7 @@ function createAiModel(provider: AiProvider): LanguageModel {
     }
     case "groq": {
       const cfg = AI_PROVIDERS.groq;
-      const apiKey = env[cfg.envKey];
+      const apiKey = envConfig.get(cfg.envKey);
       if (!apiKey)
         throw new AppError("GROQ_API_KEY is required for groq provider", "CONFIG_ERROR", false);
       const groq = createOpenAI({
