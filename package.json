@@ -1,6 +1,6 @@
 {
   "name": "tui-ai-hub",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Terminal AI Hub — Web Scraper, Chat & News tools powered by Gemini",
   "module": "index.tsx",
   "main": "dist/index.js",
