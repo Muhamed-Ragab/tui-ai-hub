@@ -7,7 +7,5 @@ Bun.build({
   splitting: false,
   format: "esm",
   external: ["react", "react-dom"],
-  reactFastRefresh: true,
   metafile: true,
-  naming: "keep-name",
 });
