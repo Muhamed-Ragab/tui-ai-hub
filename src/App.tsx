@@ -6,15 +6,15 @@ import { WebScraperScreen } from "@/features/scraper/WebScraperScreen";
 import { ChatScreen } from "@/features/chat/ChatScreen";
 import { NewsScreen } from "@/features/news/NewsScreen";
 import { KEYS } from "@/constants/keys";
-import { SCREEN_IDS, STATUSBAR_HEIGHT, CONTENT_PADDING, type ScreenId } from "@/constants/ui";
+import { SCREEN_IDS, STATUSBAR_HEIGHT, CONTENT_PADDING, type ScreenId, type FocusZone } from "@/constants/ui";
 import { key, ctrlKey, any, matchKey } from "@/lib/keyboard";
 
 export type Screen = ScreenId;
 
 const SCREENS = {
-  scraper: () => <WebScraperScreen />,
-  chat: () => <ChatScreen />,
-  news: () => <NewsScreen />,
+  scraper: (fz: FocusZone) => <WebScraperScreen focusZone={fz} />,
+  chat: (fz: FocusZone) => <ChatScreen focusZone={fz} />,
+  news: (fz: FocusZone) => <NewsScreen focusZone={fz} />,
 } as const;
 
 const screens: Screen[] = [...SCREEN_IDS];
@@ -122,7 +122,7 @@ export function App() {
             padding: CONTENT_PADDING,
           }}
         >
-          {SCREENS[screen]()}
+          {SCREENS[screen](focusZone)}
         </box>
       </box>
     </box>

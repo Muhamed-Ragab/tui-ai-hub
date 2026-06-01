@@ -8,11 +8,8 @@ import { env } from "@/config";
 import { AppError } from "@/errors";
 import type { NewsApiArticle } from "@/schemas/news-api";
 import { NEWS_CACHE_TTL_MS } from "@/constants/timing";
-import { REGEX_EXTRACT_JSON } from "@/constants/regex";
 
-const SUMMARY_SYSTEM_PROMPT = `You are a news analyst. Given a news article title and description, provide a concise summary and rate its relevance to the search query. Return JSON with exactly:
-- summary: 2-3 sentence summary
-- relevance: one of "high", "medium", or "low"`;
+const SUMMARY_SYSTEM_PROMPT = `You are a news analyst. Given a news article title and description, provide a 4-5 sentence summary and rate its relevance to the search query.`;
 
 export class NewsService {
   constructor(
@@ -49,24 +46,11 @@ export class NewsService {
     article: NewsApiArticle,
     query: string,
   ): Promise<{ summary: string; relevance: string }> {
-    const text = await this.ai.generateReply(
+    return this.ai.generateStructured(
+      articleSummarySchema,
       SUMMARY_SYSTEM_PROMPT,
       `Search query: "${query}"\n\nTitle: ${article.title}\nDescription: ${article.description ?? "No description"}`,
     );
-
-    const jsonMatch = text.match(REGEX_EXTRACT_JSON);
-    const jsonStr = jsonMatch ? jsonMatch[0] : text;
-
-    try {
-      const result = JSON.parse(jsonStr);
-      const validated = articleSummarySchema.safeParse(result);
-      if (validated.success) return validated.data;
-    } catch {}
-
-    return {
-      summary: text,
-      relevance: "medium",
-    };
   }
 }
 

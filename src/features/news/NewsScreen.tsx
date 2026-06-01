@@ -4,7 +4,7 @@ import { ScrollBoxRenderable } from "@opentui/core";
 import { colors } from "@/theme";
 import { newsService } from "./news-service";
 import { toDisplayError } from "@/errors";
-import { CHARS, INPUT_AREA_HEIGHT, SUMMARY_PANEL_WIDTH } from "@/constants/ui";
+import { CHARS, INPUT_AREA_HEIGHT, SUMMARY_PANEL_WIDTH, type FocusZone } from "@/constants/ui";
 import { NEWS_DESCRIPTION_TRUNCATE_LENGTH } from "@/constants/timing";
 import type { NewsApiArticle } from "@/schemas/news-api";
 
@@ -15,7 +15,11 @@ type Phase =
   | { type: "summarizing" }
   | { type: "error"; message: string };
 
-export function NewsScreen() {
+interface NewsScreenProps {
+  focusZone: FocusZone;
+}
+
+export function NewsScreen({ focusZone }: NewsScreenProps) {
   const [query, setQuery] = useState("");
   const [phase, setPhase] = useState<Phase>({ type: "search" });
   const [articles, setArticles] = useState<NewsApiArticle[]>([]);
@@ -25,7 +29,10 @@ export function NewsScreen() {
     relevance: string;
   } | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [summaryFocus, setSummaryFocus] = useState(false);
+  const [expandedDesc, setExpandedDesc] = useState<Set<number>>(new Set());
   const scrollboxRef = useRef<ScrollBoxRenderable | null>(null);
+  const summaryScrollboxRef = useRef<ScrollBoxRenderable | null>(null);
 
   useEffect(() => {
     scrollboxRef.current?.scrollChildIntoView(`article-${selectedIndex}`);
@@ -38,6 +45,18 @@ export function NewsScreen() {
 
   useKeyboard((key) => {
     if (phase.type !== "list") return;
+    if (focusZone !== "content") return;
+
+    if (summary && summaryFocus) {
+      switch (key.name) {
+        case "escape":
+          setSummary(null);
+          setSummaryError(null);
+          setSummaryFocus(false);
+          return;
+      }
+      return;
+    }
 
     switch (key.name) {
       case "up":
@@ -47,7 +66,10 @@ export function NewsScreen() {
         setSelectedIndex((prev) => (prev === articles.length - 1 ? 0 : prev + 1));
         return;
       case "return":
-        if (summary || summaryError) return;
+        if (summary || summaryError) {
+          setSummary(null);
+          setSummaryError(null);
+        }
         startTransition(() => setPhase({ type: "summarizing" }));
         setSummaryError(null);
         newsService
@@ -64,6 +86,14 @@ export function NewsScreen() {
       case "escape":
         setSummary(null);
         setSummaryError(null);
+        return;
+      case "space":
+        setExpandedDesc((prev) => {
+          const next = new Set(prev);
+          if (next.has(selectedIndex)) next.delete(selectedIndex);
+          else next.add(selectedIndex);
+          return next;
+        });
         return;
     }
   });
@@ -99,6 +129,7 @@ export function NewsScreen() {
                   setSelectedIndex(0);
                   setSummary(null);
                   setSummaryError(null);
+                  setExpandedDesc(new Set());
                   setPhase({ type: "list" });
                 })
                 .catch((err) => {
@@ -160,9 +191,13 @@ export function NewsScreen() {
                     </text>
                     <Activity mode={article.description ? "visible" : "hidden"}>
                       <text fg={colors.muted}>
-                        {(article.description ?? "").slice(0, NEWS_DESCRIPTION_TRUNCATE_LENGTH)}
-                        {(article.description ?? "").length > NEWS_DESCRIPTION_TRUNCATE_LENGTH
-                          ? "..."
+                        {expandedDesc.has(i)
+                          ? article.description
+                          : (article.description ?? "").slice(0, NEWS_DESCRIPTION_TRUNCATE_LENGTH)}
+                        {!expandedDesc.has(i) && (article.description ?? "").length > NEWS_DESCRIPTION_TRUNCATE_LENGTH
+                          ? isSelected
+                            ? "... ▶"
+                            : "..."
                           : ""}
                       </text>
                     </Activity>
@@ -212,15 +247,15 @@ export function NewsScreen() {
           </Activity>
 
           <Activity mode={summary ? "visible" : "hidden"}>
-            <box
+            <scrollbox
+              ref={summaryScrollboxRef}
+              focused={summary && summaryFocus}
               style={{
                 width: SUMMARY_PANEL_WIDTH,
                 border: true,
                 borderStyle: "rounded",
-                borderColor: colors.accent,
+                borderColor: summaryFocus ? colors.accent : colors.surfaceAlt,
                 padding: 1,
-                flexDirection: "column",
-                gap: 1,
               }}
             >
               <text fg={colors.green}>
@@ -229,7 +264,7 @@ export function NewsScreen() {
               <text fg={colors.fg}>{summary?.summary ?? ""}</text>
               <text fg={colors.muted}>
                 Relevance:{" "}
-                <text
+                <span
                   fg={
                     summary?.relevance === "high"
                       ? colors.green
@@ -239,17 +274,18 @@ export function NewsScreen() {
                   }
                 >
                   {summary?.relevance ?? ""}
-                </text>
+                </span>
               </text>
               <box
                 onMouseDown={() => {
                   setSummary(null);
                   setSummaryError(null);
+                  setSummaryFocus(false);
                 }}
               >
-                <text fg={colors.accent}>Press Esc to close</text>
+                <text fg={colors.accent}>Esc to close</text>
               </box>
-            </box>
+            </scrollbox>
           </Activity>
         </box>
       </Activity>

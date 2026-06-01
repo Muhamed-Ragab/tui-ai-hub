@@ -4,7 +4,7 @@ import { colors } from "@/theme";
 import { getSyntaxStyle } from "@/lib/syntax";
 import { scraperService } from "./scraper-service";
 import { toDisplayError } from "@/errors";
-import { INPUT_AREA_HEIGHT } from "@/constants/ui";
+import { INPUT_AREA_HEIGHT, type FocusZone } from "@/constants/ui";
 import type { ScrapeResult } from "@/schemas/ai-response";
 
 type Status =
@@ -13,11 +13,16 @@ type Status =
   | { type: "success"; result: ScrapeResult }
   | { type: "error"; message: string };
 
-export function WebScraperScreen() {
+interface WebScraperScreenProps {
+  focusZone: FocusZone;
+}
+
+export function WebScraperScreen({ focusZone }: WebScraperScreenProps) {
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState<Status>({ type: "idle" });
 
   useKeyboard((key) => {
+    if (focusZone !== "content") return;
     if (key.name === "escape" && status.type === "success") {
       setUrl("");
       setStatus({ type: "idle" });

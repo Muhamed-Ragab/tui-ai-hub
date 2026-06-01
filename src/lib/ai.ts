@@ -1,4 +1,5 @@
-import { generateText, streamText, type CoreMessage, type LanguageModel } from "ai";
+import { generateObject, generateText, streamText, type CoreMessage, type LanguageModel } from "ai";
+import type { z } from "zod";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { env } from "@/config";
@@ -16,6 +17,20 @@ export class AiClient {
         prompt,
       });
       return text;
+    } catch (err) {
+      throw new AppError(`AI request failed: ${(err as Error).message}`, "AI_ERROR", true);
+    }
+  }
+
+  async generateStructured<T>(schema: z.ZodType<T>, system: string, prompt: string): Promise<T> {
+    try {
+      const { object } = await generateObject({
+        model: this.model,
+        schema,
+        system,
+        prompt,
+      });
+      return object;
     } catch (err) {
       throw new AppError(`AI request failed: ${(err as Error).message}`, "AI_ERROR", true);
     }

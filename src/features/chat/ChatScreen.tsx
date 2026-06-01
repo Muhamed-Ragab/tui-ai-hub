@@ -1,5 +1,5 @@
 import { KEYS } from "@/constants/keys";
-import { CHARS, INPUT_AREA_HEIGHT } from "@/constants/ui";
+import { CHARS, INPUT_AREA_HEIGHT, type FocusZone } from "@/constants/ui";
 import { toDisplayError } from "@/errors";
 import { any, ctrlKey, key, matchKey } from "@/lib/keyboard";
 import { getSyntaxStyle } from "@/lib/syntax";
@@ -30,7 +30,11 @@ function formatMessages(messages: CoreMessage[], streamingText: string | null): 
   return parts.join("\n");
 }
 
-export function ChatScreen() {
+interface ChatScreenProps {
+  focusZone: FocusZone;
+}
+
+export function ChatScreen({ focusZone }: ChatScreenProps) {
   const [mode, setMode] = useState<Mode>("loading");
   const [messages, setMessages] = useState<CoreMessage[]>([]);
   const [input, setInput] = useState("");
@@ -147,6 +151,7 @@ export function ChatScreen() {
   }
 
   useKeyboard((e) => {
+    if (focusZone !== "content") return;
     if (e.name === KEYS.ESCAPE) {
       if (mode === "sessions") {
         setRenamingId(null);
