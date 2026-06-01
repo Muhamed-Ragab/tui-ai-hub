@@ -14,6 +14,7 @@ const items: { id: Screen; label: string }[] = [
   { id: SCREEN_IDS[0], label: "Scrape" },
   { id: SCREEN_IDS[1], label: "Chat" },
   { id: SCREEN_IDS[2], label: "News" },
+  { id: SCREEN_IDS[3], label: "Settings" },
 ];
 
 const sidebarContainerStyle = {

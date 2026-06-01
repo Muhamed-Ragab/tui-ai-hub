@@ -9,6 +9,7 @@ export const KEYS = {
   SCREEN_1: "1",
   SCREEN_2: "2",
   SCREEN_3: "3",
+  SCREEN_4: "4",
   SESSION_LIST: "s",
   NEW_SESSION: "n",
   DELETE_SESSION: "d",

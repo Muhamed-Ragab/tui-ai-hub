@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { WebScraperScreen } from "@/features/scraper/WebScraperScreen";
 import { ChatScreen } from "@/features/chat/ChatScreen";
 import { NewsScreen } from "@/features/news/NewsScreen";
+import { SettingsScreen } from "@/features/settings/SettingsScreen";
 import { KEYS } from "@/constants/keys";
 import { SCREEN_IDS, STATUSBAR_HEIGHT, CONTENT_PADDING, type ScreenId, type FocusZone } from "@/constants/ui";
 import { key, ctrlKey, any, matchKey } from "@/lib/keyboard";
@@ -15,6 +16,7 @@ const SCREENS = {
   scraper: (fz: FocusZone) => <WebScraperScreen focusZone={fz} />,
   chat: (fz: FocusZone) => <ChatScreen focusZone={fz} />,
   news: (fz: FocusZone) => <NewsScreen focusZone={fz} />,
+  settings: (fz: FocusZone) => <SettingsScreen focusZone={fz} />,
 } as const;
 
 const screens: Screen[] = [...SCREEN_IDS];
@@ -54,6 +56,14 @@ export function App() {
         () => {
           startTransition(() => setScreen("news"));
           setFocusIndex(2);
+          setFocusZone("content");
+        },
+      ],
+      [
+        key(KEYS.SCREEN_4),
+        () => {
+          startTransition(() => setScreen("settings"));
+          setFocusIndex(3);
           setFocusZone("content");
         },
       ],
@@ -111,7 +121,7 @@ export function App() {
           }}
         >
           <text fg={colors.muted}>
-            {focusZone === "sidebar" ? "[Tab: content]" : "[Tab: sidebar]"} | Press 1-3 to switch
+            {focusZone === "sidebar" ? "[Tab: content]" : "[Tab: sidebar]"} | Press 1-4 to switch
           </text>
         </box>
 
