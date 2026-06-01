@@ -1,12 +1,15 @@
 # tui-ai-hub
 
-Terminal AI Hub — three AI-powered tools in your terminal: Web Scraper, Chat, and News. Built with [OpenTUI](https://opentui.ai) + React, powered by Gemini via the Vercel AI SDK.
+Terminal AI Hub — three AI-powered tools in your terminal: Web Scraper, Chat, and News. Built with [OpenTUI](https://opentui.ai) + React, powered by Gemini or Groq via the Vercel AI SDK.
 
 ## Features
 
 - **Web Scraper** — Enter a URL, get an AI-generated summary with key points
-- **Chat** — Persistent AI chat sessions with streaming responses
+- **Chat** — Persistent AI chat sessions with streaming responses (SQLite)
 - **News** — Search news articles and get AI-powered summaries
+- **Multi-provider** — Switch between Google Gemini and Groq (LLaMA) in-app
+- **Settings UI** — Configure API keys and provider from within the terminal
+- **Cache** — In-memory cache with disk persistence across sessions
 
 ## Install
 
@@ -23,22 +26,18 @@ tui-ai-hub
 
 ## Setup
 
-Create a `.env` file in the directory you run the app from:
-
-```env
-GEMINI_API_KEY=your_gemini_api_key
-NEWS_API_KEY=your_newsapi_key
-```
+On first launch you'll be prompted to enter your API keys. You can also configure them later from the Settings screen (`4`).
 
 Get keys from:
 - [Google AI Studio](https://aistudio.google.com/apikey) (Gemini)
+- [Groq Console](https://console.groq.com/keys) (LLaMA — optional alternative)
 - [NewsAPI](https://newsapi.org/register)
 
 ## Usage
 
 | Key | Action |
 |-----|--------|
-| `1` / `2` / `3` | Switch to Scrape / Chat / News |
+| `1` / `2` / `3` / `4` | Switch to Scrape / Chat / News / Settings |
 | `Tab` | Toggle sidebar focus |
 | `↑` / `↓` | Navigate sidebar or lists |
 | `q` / `Ctrl+C` | Exit |
@@ -66,7 +65,7 @@ bun run fmt       # format
 
 - [OpenTUI](https://opentui.ai) — Terminal UI framework
 - [Vercel AI SDK](https://sdk.vercel.ai) — AI streaming & generation
-- [Gemini 2.0 Flash](https://ai.google.dev) — LLM
+- [Gemini 2.0 Flash](https://ai.google.dev) / [Groq LLaMA](https://groq.com) — LLM
 - [bun:sqlite](https://bun.sh/docs/api/sqlite) — Persistent chat storage
 
 ## License
